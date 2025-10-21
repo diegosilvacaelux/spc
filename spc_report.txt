@@ -1,0 +1,51 @@
+========================================================
+           SPC REPORT           
+========================================================
+Date Generated: 2025-10-20 23:05:38
+
+--- INPUT PARAMS AND FILTERS ---
+Measured Variable (Y): P3 (Outer) Scribe-Width (mm)
+Date Range: 09-20-2025 to 10-20-2025 
+Column filters: {'Laser Tool': 'CX02'} 
+
+--- INCONSISTENT GROUP SIZE REPORT ---
+Maximum Subgroup Size (n): 4
+Total Subgroups: 36
+Valid Subgroups: 30
+Invalid Subgroups: 5
+
+--- Invalid Subgroup Details ---
+      Date Glass ID  mean   std  size
+2025-09-23  D1-1562 0.102 0.021     3
+2025-09-24  D1-1551 0.191   NaN     1
+2025-09-24  D1-1561 0.136   NaN     1
+2025-10-15  D1-1728 0.202 0.025     3
+2025-10-15  D1-1734 0.369   NaN     1
+--- OOC POINTS REPORT ---
+Out-of-Control Points Count: 3
+
+--- Process Metrics ---
+Grand Average (X-double-bar): 0.183767
+Average Subgroup Std (S-bar): 0.051719
+A3 Constant Used: 1.6280
+
+--- Control Limits (Calculated) ---
+UCL: 0.267965
+LCL: 0.099569
+OOC Check/Plotting Status: ACTIVE
+
+--- Specification Limits (Given) ---
+USL: 0.35
+LSL: 0.01
+Limits Status: ACTIVE
+
+--- Process Capability (Cp/CpK) ---
+Cp: 1.096
+CpK: 1.071
+
+--- Out-of-Control Points Details ---
+      Date Glass ID    mean      std  size  OOC_Flag
+2025-09-22  D1-1521 0.28375 0.109728     4      True
+2025-09-25  D1-1601 0.27150 0.085387     4      True
+2025-09-25  D1-1602 0.27500 0.077541     4      True
+========================================================

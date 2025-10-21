@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: spc
+Version: 0.6
+Summary: Python-based SPC charting.  Developed by the PDEV team at Caelux.
+Home-page: https://github.com/diegosilvacaelux/spc
+Author: Diego Tapia Silva
+Author-email: diego.silva@caelux.com
+License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+License-File: LICENSE.txt
+Dynamic: author
+Dynamic: author-email
+Dynamic: home-page
+Dynamic: license
+Dynamic: license-file
+Dynamic: summary
