@@ -1,19 +1,48 @@
-# spc_analysis/config.py
+#!/usr/bin/python3
+#
+# Copyright 2025 Diego Tapia Silva 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License
+#
+# ======================================================================
+# SPC Configuration Loader
+# ======================================================================
+#
+# Purpose:
+# This module is responsible for loading Statistical Process Control (SPC) 
+# configuration files (JSON) and validating them. It handles loading single 
+# files or iterating over a directory to set up multiple analysis runs. 
+# It converts raw configuration dictionaries into structured DataConfig, 
+# TimeConfig, and ChartConfig objects for use by the SpcDataProcessor.
+#
+# Note: It automatically prepends the CONFIG_DIR path to the Excel 
+# filename defined within the DataConfig section.
 
+# Imported modules
 import json
 import os
 from typing import Dict, List
+
+# Developed modules
 from spc import DataConfig, TimeConfig, ChartConfig
 
 # Define the relative path to the configuration and data directory here
-CONFIG_DIR = 'spc_setup' 
+CONFIG_DIR = 'setup' 
 
 def load_json_config(filepath: str) -> Dict:
     """Loads and validates a single configuration from a JSON file."""
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Configuration file '{filepath}' not found.")
         
-    # ... (rest of the validation logic remains the same)
     try:
         with open(filepath, 'r') as f:
             config = json.load(f)

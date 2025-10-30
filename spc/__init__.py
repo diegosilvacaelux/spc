@@ -1,13 +1,44 @@
+#!/usr/bin/python3
+#
+# Copyright 2025 Diego Tapia Silva 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License
+#
+# ======================================================================
+# SPC Configuration Dataclasses
+# ======================================================================
+#
+# Purpose:
+# This module defines the structured configuration objects (dataclasses) 
+# used to govern the behavior of the Statistical Process Control (SPC) 
+# analysis pipeline. These classes are instantiated by the 'config.py' 
+# module from the input JSON files.
+#
+# Dataclasses:
+# 1. DataConfig: Specifies the location and filtering criteria for the 
+#    input data (Excel file, columns, filters).
+# 2. TimeConfig: Defines the chronological range for the analysis, handling 
+#    start/end dates, relative ranges (e.g., "1w"), and date parsing.
+# 3. ChartConfig: Contains parameters related to the control chart visuals 
+#    and limits (USL/LSL, colors, labels).
 
+# Imported modules
 from dataclasses import dataclass, field
 from typing import Dict, Literal, Optional, List
 from datetime import datetime, timedelta
 
-# --- Type Definitions ---
 DateRange = Literal["1d", "1w", "2w", "3w", "1m", "3m", "6m", "1y"]
 ColumnFilters = Dict[str, str]
 
-# --- Dataclasses ---
 @dataclass
 class DataConfig:
     filename: str
@@ -105,12 +136,13 @@ class TimeConfig:
 class ChartConfig:
     usl: Optional[float] = None
     lsl: Optional[float] = None
-    use_control_limits_ooc: bool = True
+    #use_control_limits_ooc: bool = True
     xlabel: Optional[str] = "Index (Chronological)"
     ylabel: Optional[str] = field(init=False, default=None) 
     color_out_of_control: str = 'red'
+    color_out_of_specification: str = 'red'
     color_in_control: str = 'blue'
-    color_grand_avg: str = 'black'
+    color_avg: str = 'black'
     color_control_limits: str = 'darkorange'
     color_spec_limits: str = 'green'
-    legend_location: str = 'upper right'
+    legend_location: str = 'outside upper right'
