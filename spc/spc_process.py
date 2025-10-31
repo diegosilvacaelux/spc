@@ -1,10 +1,10 @@
 import os
 import time
 import sys 
-import glob # <--- NEW: Import glob for wildcard expansion
+import glob 
 
 # Developed modules 
-from spc.test_config import load_json_config 
+from spc.config import load_json_config 
 from spc import DataConfig, TimeConfig, ChartConfig
 from spc.processor import SpcDataProcessor
 

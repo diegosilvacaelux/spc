@@ -1,0 +1,2 @@
+[console_scripts]
+spc = spc.spc_process:main
