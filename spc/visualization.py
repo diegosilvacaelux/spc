@@ -447,7 +447,7 @@ def plot_mr_chart(
               color=chart_cfg.color_avg, 
               linestyle='-', 
               linewidth=1.5, 
-              label=r'Average Moving Range ($\bar{MR}}$)', # FIX: Corrected label
+              label=r'Average Moving Range ($\bar{MR}$)', # FIX: Corrected label
               zorder=1
     )
 

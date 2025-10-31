@@ -36,7 +36,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Literal, Optional, List
 from datetime import datetime, timedelta
 
-DateRange = Literal["1d", "1w", "2w", "3w", "1m", "3m", "6m", "1y"]
+DateRange = Literal["1d", "2d", "3d", "4d", "5d", "6d","1w", "2w", "3w", "1m", "3m", "6m", "1y"]
 ColumnFilters = Dict[str, str]
 
 @dataclass
@@ -47,7 +47,7 @@ class DataConfig:
     skiprows: int
     header: int
     column_filters: Optional[ColumnFilters] = field(default_factory=dict) 
-    
+        
     @property
     def grouping_keys(self) -> List[str]:
         # Hardcoded for X-bar chart on Glass ID data.
@@ -82,9 +82,11 @@ class TimeConfig:
 
     def _apply_range(self, dt: datetime, rng: DateRange, backward: bool = False) -> datetime:
         delta_map = {
-            "1d": timedelta(days=1), "1w": timedelta(weeks=1), "2w": timedelta(weeks=2),
-            "3w": timedelta(weeks=3), "1m": timedelta(days=30), "3m": timedelta(weeks=12),
-            "6m": timedelta(weeks=24), "1y": timedelta(days=365)
+            "1d": timedelta(days=1), "2d": timedelta(days=2), "3d": timedelta(days=3),
+            "4d": timedelta(days=4), "5d": timedelta(days=5), "6d": timedelta(days=6),
+            "1w": timedelta(weeks=1), "2w": timedelta(weeks=2),"3w": timedelta(weeks=3),
+            "1m": timedelta(days=30), "3m": timedelta(weeks=12),"6m": timedelta(weeks=24), 
+            "1y": timedelta(days=365)
         }
         if rng not in delta_map:
             raise ValueError(f"Invalid date_range: {rng}")

@@ -67,11 +67,11 @@ class SpcDataProcessor:
     calculates control limits, detects OOC/OOS points, and generates reports.
     Supports X-bar/R, X-bar/S, and I/MR control charts.
     """
-    def __init__(self, dataconfig: DataConfig, chartconfig: ChartConfig, timeconfig: TimeConfig, output_prefix: str):
+    def __init__(self, dataconfig: DataConfig, chartconfig: ChartConfig, timeconfig: TimeConfig, output_dir: str):
         self.dataconfig = dataconfig
         self.chartconfig = chartconfig
         self.timeconfig = timeconfig
-        self.output_prefix = output_prefix
+        self.output_dir = output_dir
         
         # Processed DataFrames
         self.df_raw: Optional[pd.DataFrame] = None
@@ -105,7 +105,6 @@ class SpcDataProcessor:
 
     def run_analysis(self):
         """Orchestrates the entire data processing and analysis pipeline."""
-        print(f"Starting SPC Analysis for {self.output_prefix}...")
         
         self._load_data()
         if self.df_raw is None: return
@@ -121,8 +120,6 @@ class SpcDataProcessor:
         self._check_nelson()
         self._generate_report()
         self._plot_charts()
-
-        print(f"Analysis complete for {self.output_prefix}. Charts generated.")
 
     # --- Data Loading and Cleaning Methods ---
 
@@ -398,21 +395,19 @@ class SpcDataProcessor:
     def _generate_report(self) -> None:
         """Generates a comprehensive text report summarizing the analysis, 
         with detailed breakdown for each control rule violation."""
-        
         if self.test_ooc is None:
             print("Error: OOC/OOS analysis data (self.test_ooc) not initialized.")
             return
 
         # 1. Define the standard descriptive columns
         STANDARD_COLS = [
-            col for col in ['Date'] + self.dataconfig.grouping_keys + ['mean', 'std', 'min', 'max', 
+            col for col in self.dataconfig.grouping_keys + ['mean', 'std', 'min', 'max', 
             'size', 'range', 'moving_range'] if col in self.test_ooc.columns
         ]
-        
         # 2. Define the columns containing the boolean Rule flags
         NELSON_RULES_COLS = [f'Rule {i}' for i in range(1, 9)]
         
-        report_filename = f"spc_report.txt"
+        report_filename = os.path.join(self.output_dir, f"spc_report.txt")
         
         usl_active = self.chartconfig.usl is not None
         lsl_active = self.chartconfig.lsl is not None
@@ -438,7 +433,7 @@ class SpcDataProcessor:
             f.write("--- INVALID SUBGROUP DETAILS ---\n")
             if self.invalid_groups is not None and not self.invalid_groups.empty:
                 # Select key columns for invalid groups report
-                invalid_cols = [c for c in ['Date'] + self.dataconfig.grouping_keys + ['size'] if c in self.invalid_groups.columns]
+                invalid_cols = [c for c in self.dataconfig.grouping_keys + ['size'] if c in self.invalid_groups.columns]
                 f.write(self.invalid_groups[invalid_cols].to_string(index=False))
                 f.write("\n\n")
             else:
@@ -466,7 +461,6 @@ class SpcDataProcessor:
             f.write(f"Total Unique OOC Points Identified: {ooc_total_count}\n")
             
             for rule_col in NELSON_RULES_COLS:
-                # **CRITICAL CHANGE**: Use self.test_ooc for all rule violation checks
                 if rule_col in self.test_ooc.columns:
                     
                     # Filter for rows where the current rule is True
@@ -543,7 +537,7 @@ class SpcDataProcessor:
     def _plot_charts(self):
         """Generates plots for the Central Tendency and Variability charts."""
         # Central Tendency Plot
-        print(self.test_ooc.head())
+        #print(self.test_ooc.head())
 
         plot_func_x = plot_xbar_chart if self.central_tendency_chart_type == 'X' else None # Assuming plot_xbar_chart also handles 'I'
         if self.central_tendency_chart_type == 'I': 
@@ -554,9 +548,9 @@ class SpcDataProcessor:
                    'Rule 5', 'Rule 6', 'Rule 7', 'Rule 8']
         
         if plot_func_x:
-            df_oos = self.test_ooc[self.test_ooc['OOS']== True]
+            df_oos = self.test_ooc[self.test_ooc['OOS'] == True]
             for rule in rule_ls:
-                df_ooc = self.test_ooc[self.test_ooc[rule]== True]
+                df_ooc = self.test_ooc[self.test_ooc[rule] == True]
                 plot_func_x(
                     df_subgroups=self.test_ooc,
                     data_cfg=self.dataconfig,
@@ -567,7 +561,7 @@ class SpcDataProcessor:
                     cpk=self.cpk,
                     out_of_control_points=df_ooc,
                     out_of_specification_points=df_oos,
-                    output_filename=f"{rule.replace(' ', '')}_{self.central_tendency_chart_type}chart.png",
+                    output_filename=os.path.join(self.output_dir, f"{rule.replace(' ', '')}_{self.central_tendency_chart_type}chart.png"),
                 )
 
         # Variability Plot
@@ -582,7 +576,6 @@ class SpcDataProcessor:
             plot_func_v = plot_mr_chart
 
         if plot_func_v:
-            print(f"{self.output_prefix}_{self.variability_chart_type}chart.png")
             plot_func_v(
                 df_subgroups=self.test_ooc,
                 data_cfg=self.dataconfig,
@@ -591,6 +584,5 @@ class SpcDataProcessor:
                 ucl=self.ucl_v,
                 lcl=self.lcl_v,
                 out_of_control_points=self.ooc_points_v,
-                output_filename=f"{self.variability_chart_type}chart.png",
+                output_filename=os.path.join(self.output_dir, f"{self.variability_chart_type}chart.png"),
             )
-            print(f"{self.variability_chart_type}chart.png")
