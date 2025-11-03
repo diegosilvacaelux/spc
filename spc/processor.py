@@ -138,7 +138,7 @@ class SpcDataProcessor:
             print(f"Error: File not found at {self.dataconfig.filename}")
             self.df_raw = None
         except Exception as e:
-            print(f"Error loading data for {self.output_prefix}: {e}")
+            print(f"Error loading data for {self.output_dir}: {e}")
             self.df_raw = None
 
     def _clean_and_convert_columns(self) -> None:
@@ -152,7 +152,7 @@ class SpcDataProcessor:
         
         if len(existing_cols) < len(cols_to_keep):
             missing_cols = set(cols_to_keep) - set(existing_cols)
-            raise ValueError(f"Required columns missing from data for {self.output_prefix}: {missing_cols}")
+            raise ValueError(f"Required columns missing from data for {self.output_dir}: {missing_cols}")
 
         self.df_processed = self.df_raw.loc[:, existing_cols].copy()
         
@@ -221,7 +221,7 @@ class SpcDataProcessor:
         self.df_subgroups['moving_range'] = self.df_subgroups['mean'].diff().abs()
 
         if self.df_subgroups.empty:
-            print(f"Cannot group data for {self.output_prefix}: no subgroups generated.")
+            print(f"Cannot group data for {self.output_dir}: no subgroups generated.")
             self.df_subgroups = None
             return
 

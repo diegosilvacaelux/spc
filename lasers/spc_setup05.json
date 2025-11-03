@@ -1,0 +1,24 @@
+{
+  "DataConfig": {
+    "filename": "Process and Quality Control- Laser Scribing.xlsx",
+    "sheet_name": "Modules-Microscope Data",
+    "y_data_name": "P2 Scribe-width (mm)",
+    "skiprows": 7,
+    "header": 0
+    },
+
+ "ChartConfig": {
+    "usl": 0.045,
+    "lsl": 0.01,
+    "xlabel": "Index (Chronological)",
+    "legend_location": "lower right"
+  },
+
+  "TimeConfig": {
+    "reference_date": null,
+    "start_date": null,
+    "end_date": null,
+    "date_range": "2w",
+    "date_format": "%m-%d-%Y"
+  }
+}
