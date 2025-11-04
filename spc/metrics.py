@@ -159,26 +159,47 @@ def calculate_control_limits_mr(df_subgroups: pd.DataFrame) -> Tuple[float, floa
 # --- Process Capability and OOC/OOS Checks ---
 
 def calculate_cpk(chart_cfg: ChartConfig, grand_avg: float, process_sigma: float) -> Tuple[Optional[float], Optional[float]]:
-    """Calculates Process Capability (Cp and CpK) if USL and LSL are set."""
+    """
+    Calculates Process Capability (Cp and CpK) if at least one spec limit (USL or LSL) is set.
+    For one-sided specifications, Cp is set to None as it requires both limits.
+    """
     usl = chart_cfg.usl
     lsl = chart_cfg.lsl
     
-    if usl is None or lsl is None:
+    # Check for basic requirements (at least one limit and valid sigma)
+    if usl is None and lsl is None:
+        # No spec limits defined, cannot calculate Cpk
         return None, None
         
     if process_sigma <= 0:
         print("WARNING: Cannot calculate Cp/CpK, process standard deviation is zero or negative.")
         return None, None
             
-    # Cp (Process Potential Index)
-    process_spread = usl - lsl
-    cp = process_spread / (6 * process_sigma)
+    cp = None  # Cp (Process Potential Index) can only be calculated with both LSL and USL
+    cpk = None # Initialize Cpk
     
-    # CpK (Process Capability Index)
-    cpl = (grand_avg - lsl) / (3 * process_sigma)
-    cpu = (usl - grand_avg) / (3 * process_sigma)
-    cpk = min(cpl, cpu)
-    
+    # 1. Calculate the Capability components (Cpl and Cpu)
+    cpl = None
+    if lsl is not None:
+        cpl = (grand_avg - lsl) / (3 * process_sigma)
+        
+    cpu = None
+    if usl is not None:
+        cpu = (usl - grand_avg) / (3 * process_sigma)
+        
+    # 2. Determine Cpk based on available components
+    if cpl is not None and cpu is not None:
+        # Two-sided specification: Calculate Cp and Cpk as usual
+        process_spread = usl - lsl
+        cp = process_spread / (6 * process_sigma)
+        cpk = min(cpl, cpu)
+    elif cpl is not None:
+        # One-sided (Lower Spec Limit only): Cpk is Cpl
+        cpk = cpl
+    elif cpu is not None:
+        # One-sided (Upper Spec Limit only): Cpk is Cpu
+        cpk = cpu
+        
     return cp, cpk
 
 def check_ooc(df_subgroups: pd.DataFrame, data_column_name: str, ucl: float, lcl: float) -> pd.DataFrame:

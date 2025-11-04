@@ -63,7 +63,7 @@ def plot_xbar_chart(
               color=chart_cfg.color_avg, 
               linestyle='-', 
               linewidth=1.5, 
-              label=r'Grand Average ($\bar{\bar{{X}}}$): ' + f"{grand_avg:.3f}",
+              label=f'cl',
               zorder=1
     )
 
@@ -74,38 +74,42 @@ def plot_xbar_chart(
         marker='o', 
         linestyle='-', 
         color=chart_cfg.color_in_control, 
-        label=r'Subgroup Average ($\bar{X}$)',
+        label=r'$\bar{X}$',
         zorder=2
     )
     
     # Control Limits
     ax.axhline(ucl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, 
-               label=f'UCL (3' + r'$\sigma$)' + f": {ucl:.3f}", zorder=1)
-    ax.axhline(lcl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, 
-               label=f'LCL (3' + r'$\sigma$)' + f": {ucl:.3f}", zorder=1)
+               label=r'$\pm 3 \sigma$)', zorder=1)
+    #ax.axhline(lcl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, 
+    #           label=f'lcl (-3' + r'$\sigma$)' + f": {lcl:.3f}", zorder=1)
     
      # 1 Sigma
     sigma_chart = (ucl - grand_avg) / 3
     
     one_sigma_upper = grand_avg + sigma_chart
     one_sigma_lower = grand_avg - sigma_chart
-
-    ax.axhline(one_sigma_upper, color=chart_cfg.color_control_limits, linestyle=':', linewidth=2, zorder=1)
-    ax.axhline(one_sigma_lower, color=chart_cfg.color_control_limits, linestyle=':', linewidth=2, zorder=1)
     
     two_sigma_upper = grand_avg + 2 * sigma_chart
     two_sigma_lower = grand_avg - 2 * sigma_chart
     
-    ax.axhline(two_sigma_upper, color=chart_cfg.color_control_limits, linestyle='--', linewidth=1.5, zorder=1)
+    ax.axhline(two_sigma_upper, color=chart_cfg.color_control_limits, linestyle='--', linewidth=1.5, label=r'$\pm 2 \sigma$', zorder=1)
     ax.axhline(two_sigma_lower, color=chart_cfg.color_control_limits, linestyle='--', linewidth=1.5, zorder=1)
-
+    
+    ax.axhline(one_sigma_upper, color=chart_cfg.color_control_limits, linestyle=':', linewidth=2, label=r'$\pm 1 \sigma$', zorder=1)
+    ax.axhline(one_sigma_lower, color=chart_cfg.color_control_limits, linestyle=':', linewidth=2, zorder=1)
+    
     # Specification Limits
-    if chart_cfg.usl is not None:
+    if chart_cfg.usl is not None and chart_cfg.lsl is not None:
+        ax.axhline(chart_cfg.lsl, color=chart_cfg.color_spec_limits, linestyle='-', linewidth=1.5, 
+                label=f'usl/lsl', zorder=1)
+    
+    elif chart_cfg.usl is not None:
          ax.axhline(chart_cfg.usl, color=chart_cfg.color_spec_limits, linestyle='-', linewidth=1.5, 
-                    label=f'USL: {chart_cfg.usl:.3f}', zorder=1)
-    if chart_cfg.lsl is not None:
+                    label=f'usl', zorder=1)
+    elif chart_cfg.lsl is not None:
          ax.axhline(chart_cfg.lsl, color=chart_cfg.color_spec_limits, linestyle='-', linewidth=1.5, 
-                    label=f'LSL: {chart_cfg.lsl:.3f}', zorder=1)
+                    label=f'lsl', zorder=1)
             
     # Plot OOC points
     if not out_of_control_points.empty:
@@ -116,7 +120,7 @@ def plot_xbar_chart(
             subgroup_data[is_ooc]['mean'], 
             marker='o', 
             color=chart_cfg.color_out_of_control, 
-            label='OOC',
+            label='ooc',
             s=70, 
             zorder=3
         )
@@ -129,7 +133,7 @@ def plot_xbar_chart(
             subgroup_data[is_oos]['mean'], 
             marker='x',
             color=chart_cfg.color_out_of_specification, 
-            label='OOS',
+            label='oos',
             s=70, 
             zorder=3
         )
@@ -175,8 +179,8 @@ def plot_xbar_chart(
     ax.set_title(title, fontsize=14)
     ax.set_xlabel(chart_cfg.xlabel, fontsize=14)
     ax.set_ylabel(f"{data_cfg.y_data_name}", fontsize=14)
-    ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    
+    #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=14)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
     
@@ -185,6 +189,165 @@ def plot_xbar_chart(
     print(f"Chart saved: {output_filename}")
     plt.close(fig) 
 
+##############################################################################################3
+
+def plot_i_chart(
+    df_subgroups: pd.DataFrame, 
+    data_cfg: DataConfig, 
+    chart_cfg: ChartConfig, 
+    grand_avg: float, 
+    ucl: float, 
+    lcl: float, 
+    cpk: Optional[float], 
+    out_of_control_points: pd.DataFrame,
+    out_of_specification_points: pd.DataFrame,
+    output_filename: str = "i_chart.png"
+):
+    """
+    Generates the I control chart.
+    """
+    if df_subgroups is None or df_subgroups.empty:
+        print("Cannot plot chart: No valid subgroups found.")
+        return
+
+    # FIX: Keep original index as a column for mapping OOC/OOS points
+    subgroup_data = df_subgroups.copy().reset_index().rename(columns={'index': 'original_index'})
+    x_positions = subgroup_data.index 
+
+    fig, ax = plt.subplots(figsize=(14, 8))
+        
+    # Center Line
+    ax.axhline(grand_avg, 
+              color=chart_cfg.color_avg, 
+              linestyle='-', 
+              linewidth=1.5, 
+              label=f"cl",
+              zorder=1
+    )
+
+    # Plot Subgroup Means
+    ax.plot(
+        x_positions, 
+        subgroup_data['mean'], 
+        marker='o', 
+        linestyle='-', 
+        color=chart_cfg.color_in_control, 
+        label=r'$X$',
+        zorder=2
+    )
+    
+    # Control Limits
+    ax.axhline(ucl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, 
+               label=r'$\pm 3 \sigma$', zorder=1)
+    ax.axhline(lcl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, zorder=1)
+    
+     # 1 Sigma
+    sigma_chart = (ucl - grand_avg) / 3
+    
+    one_sigma_upper = grand_avg + sigma_chart
+    one_sigma_lower = grand_avg - sigma_chart
+    
+    two_sigma_upper = grand_avg + 2 * sigma_chart
+    two_sigma_lower = grand_avg - 2 * sigma_chart
+    
+    ax.axhline(two_sigma_upper, color=chart_cfg.color_control_limits, linestyle='--', linewidth=1.5, label=r'$\pm 2 \sigma$', zorder=1)
+    ax.axhline(two_sigma_lower, color=chart_cfg.color_control_limits, linestyle='--', linewidth=1.5, zorder=1)
+
+    ax.axhline(one_sigma_upper, color=chart_cfg.color_control_limits, linestyle=':', linewidth=2, label=r'$\pm 1 \sigma$', zorder=1)
+    ax.axhline(one_sigma_lower, color=chart_cfg.color_control_limits, linestyle=':', linewidth=2, zorder=1)
+
+    # Specification Limits
+    if chart_cfg.usl is not None and chart_cfg.lsl is not None:
+        ax.axhline(chart_cfg.lsl, color=chart_cfg.color_spec_limits, linestyle='-', linewidth=1.5, 
+                label=f'usl/lsl', zorder=1)
+    
+    elif chart_cfg.usl is not None:
+         ax.axhline(chart_cfg.usl, color=chart_cfg.color_spec_limits, linestyle='-', linewidth=1.5, 
+                    label=f'usl', zorder=1)
+    elif chart_cfg.lsl is not None:
+         ax.axhline(chart_cfg.lsl, color=chart_cfg.color_spec_limits, linestyle='-', linewidth=1.5, 
+                    label=f'lsl', zorder=1)
+
+            
+    # Plot OOC points
+    if not out_of_control_points.empty:
+        is_ooc = subgroup_data['original_index'].isin(out_of_control_points.index)
+        
+        ax.scatter(
+            subgroup_data.index[is_ooc], 
+            subgroup_data[is_ooc]['mean'], 
+            marker='o', 
+            color=chart_cfg.color_out_of_control, 
+            label='ooc',
+            s=70, 
+            zorder=3
+        )
+    # Plot OOS points 
+    if not out_of_specification_points.empty:
+        is_oos = subgroup_data['original_index'].isin(out_of_specification_points.index)
+        
+        ax.scatter(
+            subgroup_data.index[is_oos], 
+            subgroup_data[is_oos]['mean'], 
+            marker='x',
+            color=chart_cfg.color_out_of_specification, 
+            label='oos',
+            s=70, 
+            zorder=3
+        )
+
+    # Annotations and Labels (Glass ID for each point)
+    for index, row in subgroup_data.iterrows():
+        subgroup_label = row['Glass ID']
+        
+        ax.annotate(
+            subgroup_label, 
+            (index, row['mean']), 
+            textcoords="offset points", 
+            xytext=(5, 5), 
+            ha='left', 
+            fontsize=12,
+            rotation=45, 
+            zorder=4 
+        )
+    
+    # Draw vertical lines and date labels for chronological index
+    subgroup_data['Date_str'] = subgroup_data['Date'].dt.strftime('%m-%d-%Y')
+    # Use sort=False to maintain original chronological order
+    date_boundaries = subgroup_data.groupby('Date_str', sort=False).apply(lambda g: g.index.min()).tolist()
+
+    for i, idx in enumerate(date_boundaries):
+        date_label = subgroup_data.loc[idx, 'Date_str']
+        ax.axvline(x=idx, color='gray', linestyle='--', linewidth=1, zorder=0)
+        ax.text(
+            x=idx,
+            y=ax.get_ylim()[1], 
+            s=date_label,
+            rotation=90,
+            verticalalignment='top',
+            horizontalalignment='center',
+            fontsize=12,
+            color='black',
+            zorder=0
+        )
+
+    cpk_str = f"N/A" if cpk is None else f"{cpk:.3f}"
+    title = f"I Chart, Cpk: {cpk_str}" 
+
+    ax.set_title(title, fontsize=14)
+    ax.set_xlabel(chart_cfg.xlabel, fontsize=14)
+    ax.set_ylabel(f"{data_cfg.y_data_name}", fontsize=14)
+    #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=14)
+    ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
+    ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    
+    plt.tight_layout()
+    plt.savefig(output_filename, dpi=600)
+    print(f"Chart saved: {output_filename}")
+    plt.close(fig) 
+
+####################################################################################
 
 def plot_r_chart(
     df_subgroups: pd.DataFrame, 
@@ -214,7 +377,7 @@ def plot_r_chart(
               color=chart_cfg.color_avg, 
               linestyle='-', 
               linewidth=1.5, 
-              label=r'Average Range ($\bar{{R}}$): '+ f"{avg:.3f}",
+              label=f'cl',
               zorder=1
     )
 
@@ -225,15 +388,14 @@ def plot_r_chart(
         marker='o', 
         linestyle='-', 
         color=chart_cfg.color_in_control, 
-        label=r'Subgroup Range (R)',
+        label=r'R',
         zorder=2
     )
     
     # Control Limits
     ax.axhline(ucl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, 
-               label=f'UCL (3-sigma): {ucl:.3f}', zorder=1)
-    ax.axhline(lcl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, 
-               label=f'LCL (3-sigma): {lcl:.3f}', zorder=1)
+               label=r'$\pm 3 \sigma$', zorder=1)
+    ax.axhline(lcl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, zorder=1)
     
             
     # Plot OOC points (if any)
@@ -246,7 +408,7 @@ def plot_r_chart(
             subgroup_data[is_ooc]['range'], 
             marker='o', 
             color=chart_cfg.color_out_of_control, 
-            label='OOC',
+            label='ooc',
             s=70, 
             zorder=3
         )
@@ -290,8 +452,8 @@ def plot_r_chart(
     ax.set_title(title, fontsize=14)
     ax.set_xlabel(chart_cfg.xlabel, fontsize=14)
     ax.set_ylabel(f"Range of {data_cfg.y_data_name}", fontsize=14)
-    ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    
+    #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=14)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
@@ -302,6 +464,7 @@ def plot_r_chart(
     print(f"Chart saved: {output_filename}")
     plt.close(fig) 
 
+######################################################################################################
 
 # S-Chart
 def plot_s_chart(
@@ -332,7 +495,7 @@ def plot_s_chart(
               color=chart_cfg.color_avg, 
               linestyle='-', 
               linewidth=1.5, 
-              label=r'Average $\bar{\sigma}$', 
+              label=f'cl', 
               zorder=1
     )
 
@@ -343,15 +506,14 @@ def plot_s_chart(
         marker='o', 
         linestyle='-', 
         color=chart_cfg.color_in_control, 
-        label=r'Subgroup Std Dev ($\sigma$)', 
+        label=r'$S_i$', 
         zorder=2
     )
     
     # Control Limits
     ax.axhline(ucl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, 
-               label=f'UCL (3-sigma): {ucl:.3f}', zorder=1)
-    ax.axhline(lcl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, 
-               label=f'LCL (3-sigma): {lcl:.3f}', zorder=1)
+               label=r'$\pm 3 \sigma$', zorder=1)
+    ax.axhline(lcl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, zorder=1)
             
     # Plot OOC points (if any)
     if not out_of_control_points.empty:
@@ -363,7 +525,7 @@ def plot_s_chart(
             subgroup_data[is_ooc]['std'], # Plotting the std of the OOC points
             marker='o', 
             color=chart_cfg.color_out_of_control, 
-            label='OOC',
+            label='ooc',
             s=70, 
             zorder=3
         )
@@ -407,8 +569,8 @@ def plot_s_chart(
     ax.set_title(title, fontsize=14)
     ax.set_xlabel(chart_cfg.xlabel, fontsize=14)
     ax.set_ylabel(f"Standard Deviation of {data_cfg.y_data_name}", fontsize=14) # Changed ylabel
-    ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    
+    #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=14)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
@@ -417,6 +579,7 @@ def plot_s_chart(
     print(f"Chart saved: {output_filename}")
     plt.close(fig) 
 
+########################################################################
 
 # MR-Chart
 def plot_mr_chart(
@@ -447,7 +610,7 @@ def plot_mr_chart(
               color=chart_cfg.color_avg, 
               linestyle='-', 
               linewidth=1.5, 
-              label=r'Average Moving Range ($\bar{MR}$)', # FIX: Corrected label
+              label=f'cl', # FIX: Corrected label
               zorder=1
     )
 
@@ -458,15 +621,14 @@ def plot_mr_chart(
         marker='o', 
         linestyle='-', 
         color=chart_cfg.color_in_control, 
-        label=r'Moving Range (MR)', # FIX: Corrected label
+        label=r'mR', # FIX: Corrected label
         zorder=2
     )
     
     # Control Limits
     ax.axhline(ucl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, 
-               label=f'UCL (3-sigma): {ucl:.3f}', zorder=1)
-    ax.axhline(lcl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, 
-               label=f'LCL (3-sigma): {lcl:.3f}', zorder=1)
+               label=r'$\pm 3 \sigma$', zorder=1)
+    ax.axhline(lcl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, zorder=1)
     
             
     # Plot OOC points 
@@ -478,7 +640,7 @@ def plot_mr_chart(
             subgroup_data[is_ooc]['moving_range'], 
             marker='o', 
             color=chart_cfg.color_out_of_control, 
-            label='OOC',
+            label='ooc',
             s=70, 
             zorder=3
         )
@@ -521,8 +683,8 @@ def plot_mr_chart(
     ax.set_title(title, fontsize=14)
     ax.set_xlabel(chart_cfg.xlabel, fontsize=14)
     ax.set_ylabel(f"Moving Range of {data_cfg.y_data_name}", fontsize=14) 
-    ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    
+    #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=14)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 

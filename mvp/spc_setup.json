@@ -8,17 +8,17 @@
     },
 
  "ChartConfig": {
-    "usl": 17,
+    "usl": null,
     "lsl": 10,
     "xlabel": "Index (Chronological)",
-    "legend_location": "lower right"
+    "legend_location": "upper right"
   },
 
   "TimeConfig": {
     "reference_date": null,
-    "start_date": null,
-    "end_date": null,
-    "date_range": "2w",
+    "start_date": "10/27/2025",
+    "end_date": "10/31/2025",
+    "date_range": null,
     "date_format": "%m-%d-%Y"
   }
 }

@@ -39,7 +39,7 @@ from typing import Optional
 
 # Developed modules
 from spc import DataConfig, TimeConfig, ChartConfig
-from spc.visualization import plot_mr_chart, plot_r_chart, plot_s_chart, plot_xbar_chart
+from spc.visualization import plot_mr_chart, plot_r_chart, plot_s_chart, plot_xbar_chart, plot_i_chart
 from spc.metrics import (
     calculate_control_limits_x_s, 
     calculate_control_limits_r, 
@@ -542,7 +542,7 @@ class SpcDataProcessor:
         plot_func_x = plot_xbar_chart if self.central_tendency_chart_type == 'X' else None # Assuming plot_xbar_chart also handles 'I'
         if self.central_tendency_chart_type == 'I': 
             # Placeholder: In a real environment, you'd likely use a dedicated plot_i_chart
-            plot_func_x = plot_xbar_chart 
+            plot_func_x = plot_i_chart 
         
         rule_ls = ['Rule 1', 'Rule 2', 'Rule 3', 'Rule 4', 
                    'Rule 5', 'Rule 6', 'Rule 7', 'Rule 8']
