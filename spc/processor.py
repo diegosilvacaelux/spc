@@ -470,8 +470,8 @@ class SpcDataProcessor:
 
             f.write("--- INPUT AND DATA SUMMARY ---\n")
             f.write(f"Time Window: {self.timeconfig.start_dt} to {self.timeconfig.end_dt}\n")
-            f.write(f"Inclusion Filters Applied (Kept entries):{include_str}\n\n")
-            f.write(f"Exclusion Filters Applied (Removed entries):{exclude_str}\n\n")
+            f.write(f"Inclusion Filters Applied (Kept entries):{include_str}\n")
+            f.write(f"Exclusion Filters Applied (Removed entries):{exclude_str}\n")
             f.write(f"Measured Variable: {self.dataconfig.y_data_name}\n")
             f.write(f"Chart Type Used: {self.central_tendency_chart_type}/{self.variability_chart_type}\n")
             f.write(f"Subgroup Size (n): {self.highest_frequnecy_subgroup_size}\n")
