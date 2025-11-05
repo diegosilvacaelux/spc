@@ -90,8 +90,9 @@ def main():
         config_filename = config_item['filename']
 
         prefix_base = os.path.splitext(config_filename)[0] 
-        output_dir_name = prefix_base.replace('spc_setup', 'spc_output')
-        
+        #output_dir_name = prefix_base.replace('spc_setup', 'spc_output')
+        output_dir_name = prefix_base
+
         if not os.path.exists(output_dir_name):
             os.makedirs(output_dir_name, exist_ok=True)
             print(f"Created output directory: {output_dir_name}")
