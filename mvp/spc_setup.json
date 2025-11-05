@@ -1,24 +1,26 @@
 {
   "DataConfig": {
-    "filename": "mvp_progress_data.xlsx",
-    "sheet_name": "mvp_progress_data",
-    "y_data_name": "Max PCE (%)",
-    "skiprows": 0,
-    "header": 0
-    },
+     "filename": "mvp_progress_data.xlsx",
+     "sheet_name": "mvp_progress_data",
+     "y_data_col": "Max PCE (%)",
+     "date_col": "Substrate Fab Date",  
+     "substrate_col": "Substrate", 
+     "skiprows": 0,
+     "header": 0
+  },
 
  "ChartConfig": {
     "usl": null,
     "lsl": 10,
     "xlabel": "Index (Chronological)",
-    "legend_location": "upper right"
+    "events_vlines": {"10/25/2025": "New recipe", "10/30/2025": "New IZ"}
   },
 
   "TimeConfig": {
     "reference_date": null,
-    "start_date": "10/27/2025",
-    "end_date": "10/31/2025",
-    "date_range": null,
+    "start_date": null,
+    "end_date": null,
+    "date_range": "1w",
     "date_format": "%m-%d-%Y"
   }
 }

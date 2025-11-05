@@ -36,35 +36,63 @@ from dataclasses import dataclass, field
 from typing import Dict, Literal, Optional, List
 from datetime import datetime, timedelta
 
-DateRange = Literal["1d", "2d", "3d", "4d", "5d", "6d","1w", "2w", "3w", "1m", "3m", "6m", "1y"]
+DateRange = Literal["1d", "2d", "3d", "4d", "5d", "6d","1w", "2w", "3w", "1m", "2m", "3m", "6m", "1y"]
 ColumnFilters = Dict[str, str]
 
 @dataclass
 class DataConfig:
+    """
+    Configuration for loading and initial filtering of raw data for SPC analysis.
+    """
     filename: str
     sheet_name: str
-    y_data_name: str
+    
+    # 1. Flexible Column Names (Input Fields)
+    y_data_col: str         # The column containing the measured variable (e.g., "Max PCE (%)")
+    date_col: str           # The column containing the date/time (e.g., "Fab Date" or "Date")
+    substrate_col: str      # The column defining the subgroup unit (e.g., "Glass ID" or "Wafer Lot")
+    
     skiprows: int
     header: int
-    column_filters: Optional[ColumnFilters] = field(default_factory=dict) 
-        
+    
+    # Filtering fields
+    column_include_entries: Optional[Dict[str, List[str]]] = field(default_factory=dict)
+    column_exclude_entries: Optional[Dict[str, List[str]]] = field(default_factory=dict)
+
+    @property
+    def y_data_name(self) -> str:
+        """Alias for compatibility with plotting functions."""
+        return self.y_data_col
+
     @property
     def grouping_keys(self) -> List[str]:
-        # Hardcoded for X-bar chart on Glass ID data.
-        return ['Date', 'Glass ID']
+        """
+        Dynamically defines the columns used to create subgroups, which are the 
+        date column and the substrate ID column.
+        """
+        # The grouping keys are always the date column and the substrate column
+        return [self.date_col, self.substrate_col]
     
     @property
     def required_columns(self) -> List[str]:
-       # Start with the mandatory columns for X-bar analysis
-        cols = self.grouping_keys + [self.y_data_name]
+        """
+        Generates a list of all columns that must be present in the DataFrame, 
+        ensuring all analysis, grouping, and filtering columns are included.
+        """
+        # Start with the mandatory columns for analysis
+        # Note: We use self.y_data_col here, not self.y_data_name
+        cols = self.grouping_keys + [self.y_data_col]
         
-        # Only include columns from filters that have a specific (non-None) value
-        if self.column_filters:
-            filter_cols_to_keep = [
-                k for k, v in self.column_filters.items() if v is not None
-            ]
-            cols.extend(filter_cols_to_keep)
-        
+        # Include columns from inclusion filters
+        if self.column_include_entries:
+            # Get the keys (column names) from the dictionary
+            cols.extend(list(self.column_include_entries.keys()))
+            
+        # Include columns from exclusion masks
+        if self.column_exclude_entries:
+            # Get the keys (column names) from the dictionary
+            cols.extend(list(self.column_exclude_entries.keys()))
+            
         # Use dict.fromkeys to maintain order and deduplicate
         return list(dict.fromkeys(cols))
 
@@ -74,9 +102,8 @@ class TimeConfig:
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     date_range: DateRange = "1w"
-    date_format: str = "%m-%d-%Y" # Used for TimeConfig dates
+    date_format: str = "%m-%d-%Y" 
     
-    # These will be set in __post_init__
     start_dt: datetime = field(init=False)
     end_dt: datetime = field(init=False)
 
@@ -85,8 +112,8 @@ class TimeConfig:
             "1d": timedelta(days=1), "2d": timedelta(days=2), "3d": timedelta(days=3),
             "4d": timedelta(days=4), "5d": timedelta(days=5), "6d": timedelta(days=6),
             "1w": timedelta(weeks=1), "2w": timedelta(weeks=2),"3w": timedelta(weeks=3),
-            "1m": timedelta(days=30), "3m": timedelta(weeks=12),"6m": timedelta(weeks=24), 
-            "1y": timedelta(days=365)
+            "1m": timedelta(days=30), "2m": timedelta(weeks=9), "3m": timedelta(weeks=12),
+            "6m": timedelta(weeks=24), "1y": timedelta(days=365)
         }
         if rng not in delta_map:
             raise ValueError(f"Invalid date_range: {rng}")
@@ -95,10 +122,9 @@ class TimeConfig:
         return dt - delta if backward else dt + delta
 
     def __post_init__(self):
-        import pandas as pd # Import locally to reduce top-level dependencies
+        import pandas as pd
         
         def parse_opt(dt_str: Optional[str]) -> Optional[datetime]:
-            # Normalize common 'null' values
             if dt_str is None or (isinstance(dt_str, str) and dt_str.lower() in ('none', 'null', '')):
                 return None
             
@@ -106,12 +132,10 @@ class TimeConfig:
                 return datetime.strptime(dt_str, self.date_format)
             except ValueError:
                 try:
-                    # Fallback to pandas' robust date parsing
                     return pd.to_datetime(dt_str).to_pydatetime()
                 except:
                     raise ValueError(f"Date '{dt_str}' does not match format {self.date_format} or common formats.")
 
-        # Clean up string inputs that might be 'null'
         for attr in ['start_date', 'end_date', 'reference_date']:
             val = getattr(self, attr)
             if isinstance(val, str) and val.lower() == 'null':
@@ -138,7 +162,6 @@ class TimeConfig:
 class ChartConfig:
     usl: Optional[float] = None
     lsl: Optional[float] = None
-    #use_control_limits_ooc: bool = True
     xlabel: Optional[str] = "Index (Chronological)"
     ylabel: Optional[str] = field(init=False, default=None) 
     color_out_of_control: str = 'red'
@@ -147,4 +170,4 @@ class ChartConfig:
     color_avg: str = 'black'
     color_control_limits: str = 'darkorange'
     color_spec_limits: str = 'green'
-    legend_location: str = 'outside upper right'
+    events_vlines: Optional[Dict[str, str]] = field(default_factory=dict)

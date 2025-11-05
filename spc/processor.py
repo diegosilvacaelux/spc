@@ -36,7 +36,7 @@ import pandas as pd
 from datetime import datetime
 import os
 from typing import Optional
-
+from typing import Dict, List
 # Developed modules
 from spc import DataConfig, TimeConfig, ChartConfig
 from spc.visualization import plot_mr_chart, plot_r_chart, plot_s_chart, plot_xbar_chart, plot_i_chart
@@ -111,8 +111,8 @@ class SpcDataProcessor:
         
         self._clean_and_convert_columns()
         self._filter_by_date()
-        self._filter_by_column_entry()
-        
+        #self._filter_by_column_entry()
+        self._apply_column_filters()
         self._group_data()
         if self.df_subgroups is None: return
 
@@ -157,11 +157,11 @@ class SpcDataProcessor:
         self.df_processed = self.df_raw.loc[:, existing_cols].copy()
         
         # Convert types (Date to datetime, Y data to numeric)
-        self.df_processed['Date'] = pd.to_datetime(self.df_processed['Date'].astype(str).str.strip(), errors="coerce")
+        self.df_processed[self.dataconfig.date_col] = pd.to_datetime(self.df_processed[self.dataconfig.date_col].astype(str).str.strip(), errors="coerce")
         self.df_processed[xcol] = pd.to_numeric(self.df_processed[xcol].astype(str).str.strip(), errors="coerce")
         
         # Drop rows where Date is NaT or Y data is NaN
-        self.df_processed.dropna(subset=['Date', xcol], inplace=True)
+        self.df_processed.dropna(subset=[self.dataconfig.date_col, xcol], inplace=True)
 
         
     def _filter_by_date(self) -> None:
@@ -171,28 +171,58 @@ class SpcDataProcessor:
         start = self.timeconfig.start_dt
         end = self.timeconfig.end_dt
         print(f"Filtering DataFrame for date range: {start} to {end}")
-        mask = (self.df_processed['Date'] >= start) & (self.df_processed['Date'] <= end)
+        mask = (self.df_processed[self.dataconfig.date_col] >= start) & (self.df_processed[self.dataconfig.date_col] <= end)
         self.df_processed = self.df_processed.loc[mask].copy()
 
-    def _filter_by_column_entry(self) -> None:
-        """Filters the processed data based on specific column values."""
-        if self.df_processed is None or self.df_processed.empty: return
+    def _apply_column_filters(self) -> None:
+        """Applies both inclusion and exclusion filters defined in DataConfig."""
+        if self.df_processed is None or self.df_processed.empty:
+            return
         
-        filters = self.dataconfig.column_filters
-        active_filters = {k: v for k, v in filters.items() if v is not None}
+        df = self.df_processed.copy()
         
-        if not active_filters: return
+        # --- 1. Inclusion Logic (Column AND, Value OR) ---
+        # Rows must satisfy ALL inclusion filters (AND logic between columns)
         
-        combined_mask = pd.Series(True, index=self.df_processed.index)
+        include_mask = pd.Series(True, index=df.index)
         
-        for column_name, value in active_filters.items():
-            if column_name not in self.df_processed.columns: continue
+        for column_name, included_values in self.dataconfig.column_include_entries.items():
+            if column_name in df.columns and included_values:
+                # Prepare values for robust, case-insensitive comparison
+                included_values_clean = [str(v).strip().casefold() for v in included_values]
                 
-            self.df_processed[column_name] = self.df_processed[column_name].astype(str).str.strip()
-            current_mask = (self.df_processed[column_name].str.casefold() == str(value).strip().casefold())
-            combined_mask = combined_mask & current_mask
-            
-        self.df_processed = self.df_processed.loc[combined_mask].copy()
+                # Standardize DataFrame column
+                df_column = df[column_name].astype(str).str.strip().str.casefold()
+                
+                # Create a mask where entries are IN the list (Value OR logic)
+                current_filter_mask = df_column.isin(included_values_clean)
+                
+                # Combine masks using AND: keeps only rows that satisfy ALL column filters
+                include_mask = include_mask & current_filter_mask
+                
+        df = df.loc[include_mask].copy()
+
+        # --- 2. Exclusion Logic (Column OR, Value OR) ---
+        # Rows that match ANY exclusion criteria are removed (OR logic)
+        
+        exclude_mask = pd.Series(False, index=df.index) # Start with a mask that removes nothing
+
+        for column_name, excluded_values in self.dataconfig.column_exclude_entries.items():
+            if column_name in df.columns and excluded_values:
+                # Prepare values for robust, case-insensitive comparison
+                excluded_values_clean = [str(v).strip().casefold() for v in excluded_values]
+                
+                # Standardize DataFrame column
+                df_column = df[column_name].astype(str).str.strip().str.casefold()
+                
+                # Create a mask where entries are IN the list (Value OR logic, rows to REMOVE)
+                current_exclude_mask = df_column.isin(excluded_values_clean)
+                
+                # Combine masks using OR: any row that is marked True in ANY exclusion filter will be removed
+                exclude_mask = exclude_mask | current_exclude_mask
+
+        # Final step: apply the inverted exclusion mask (~exclude_mask)
+        self.df_processed = df.loc[~exclude_mask].copy()
 
     def _group_data(self) -> None:
         """Groups data by keys and calculates subgroup statistics, handling $n=1$ case."""
@@ -391,6 +421,19 @@ class SpcDataProcessor:
         )
 
     # --- Reporting and Plotting Methods ---
+
+    def _format_filter_dict(self, filter_dict: Dict[str, List[str]]) -> str:
+        """Converts a column filter dictionary into a readable string for the report."""
+        if not filter_dict:
+            return "None"
+            
+        lines = []
+        for column, values in filter_dict.items():
+            # Join the list of values into a single string
+            value_str = ", ".join([f'"{v}"' for v in values])
+            lines.append(f"\t- {column}: [{value_str}]")
+            
+        return "\n" + "\n".join(lines)
     
     def _generate_report(self) -> None:
         """Generates a comprehensive text report summarizing the analysis, 
@@ -422,7 +465,13 @@ class SpcDataProcessor:
             f.write(f"Date Generated: {datetime.now().strftime('%m-%d-%Y %H:%M:%S')}\n\n")
 
             # --- Input Summary ---
+            include_str = self._format_filter_dict(self.dataconfig.column_include_entries)
+            exclude_str = self._format_filter_dict(self.dataconfig.column_exclude_entries)
+
             f.write("--- INPUT AND DATA SUMMARY ---\n")
+            f.write(f"Time Window: {self.timeconfig.start_dt} to {self.timeconfig.end_dt}\n")
+            f.write(f"Inclusion Filters Applied (Kept entries):{include_str}\n\n")
+            f.write(f"Exclusion Filters Applied (Removed entries):{exclude_str}\n\n")
             f.write(f"Measured Variable: {self.dataconfig.y_data_name}\n")
             f.write(f"Chart Type Used: {self.central_tendency_chart_type}/{self.variability_chart_type}\n")
             f.write(f"Subgroup Size (n): {self.highest_frequnecy_subgroup_size}\n")

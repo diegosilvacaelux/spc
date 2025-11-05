@@ -80,9 +80,8 @@ def plot_xbar_chart(
     
     # Control Limits
     ax.axhline(ucl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, 
-               label=r'$\pm 3 \sigma$)', zorder=1)
-    #ax.axhline(lcl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, 
-    #           label=f'lcl (-3' + r'$\sigma$)' + f": {lcl:.3f}", zorder=1)
+               label=r'$\pm 3 \sigma$', zorder=1)
+    ax.axhline(lcl, color=chart_cfg.color_control_limits, linestyle='-', linewidth=2, zorder=1)
     
      # 1 Sigma
     sigma_chart = (ucl - grand_avg) / 3
@@ -140,7 +139,7 @@ def plot_xbar_chart(
 
     # Annotations and Labels (Glass ID for each point)
     for index, row in subgroup_data.iterrows():
-        subgroup_label = row['Glass ID']
+        subgroup_label = row[data_cfg.substrate_col]
         
         ax.annotate(
             subgroup_label, 
@@ -148,13 +147,13 @@ def plot_xbar_chart(
             textcoords="offset points", 
             xytext=(5, 5), 
             ha='left', 
-            fontsize=12,
+            fontsize=18,
             rotation=45, 
             zorder=4 
         )
     
     # Draw vertical lines and date labels for chronological index
-    subgroup_data['Date_str'] = subgroup_data['Date'].dt.strftime('%m-%d-%Y')
+    subgroup_data['Date_str'] = subgroup_data[data_cfg.date_col].dt.strftime('%m-%d-%Y')
     # Use sort=False to maintain original chronological order
     date_boundaries = subgroup_data.groupby('Date_str', sort=False).apply(lambda g: g.index.min()).tolist()
 
@@ -168,22 +167,56 @@ def plot_xbar_chart(
             rotation=90,
             verticalalignment='top',
             horizontalalignment='center',
-            fontsize=12,
+            fontsize=18,
             color='black',
             zorder=0
         )
+    if chart_cfg.events_vlines:
+        # Convert the DataFrame's 'Date' column to the string format used for vlines
+        # Assuming subgroup_data['Date'] is a pandas datetime object
+        date_format = '%m/%d/%Y' # Adjust this format if your custom_vlines keys use a different date format
+        subgroup_data['events_vlines_date_str'] = subgroup_data[data_cfg.date_col].dt.strftime(date_format)
+
+        for date_str, label in chart_cfg.events_vlines.items():
+            # Find the *first* occurrence index in the chronological data for this date
+            # We assume date_str in custom_vlines matches the day of the change.
+            v_line_points = subgroup_data[subgroup_data['events_vlines_date_str'] == date_str].index.min()
+            
+            if pd.notna(v_line_points):
+                # 1. Draw the vertical line (e.g., in blue)
+                ax.axvline(x=v_line_points, 
+                           color='purple', # Use a distinct color like blue
+                           linestyle='--', 
+                           linewidth=2, 
+                           zorder=3) # Higher zorder to be clearly visible
+                
+                # 2. Add the custom label annotation at the top of the chart
+                ax.text(
+                    x=v_line_points,
+                    y=ax.get_ylim()[0], # Place at the top of the y-axis limit
+                    s=label, # The custom label text
+                    rotation=0,
+                    verticalalignment='bottom',
+                    horizontalalignment='left',
+                    fontsize=18, # Match existing text size
+                    color='purple', # Match the line color
+                    zorder=4, # Highest zorder for text visibility
+                )
+            else:
+                print(f"Warning: Could not find data for event vline date: {date_str}")
 
     cpk_str = f"N/A" if cpk is None else f"{cpk:.3f}"
     title = f"X-bar Chart, Cpk: {cpk_str}" 
 
-    ax.set_title(title, fontsize=14)
-    ax.set_xlabel(chart_cfg.xlabel, fontsize=14)
-    ax.set_ylabel(f"{data_cfg.y_data_name}", fontsize=14)
+    ax.set_title(title, fontsize=20)
+    ax.set_xlabel(chart_cfg.xlabel, fontsize=18)
+    ax.set_ylabel(f"{data_cfg.y_data_name}", fontsize=18)
     #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=14)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=18)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-    
+    ax.tick_params(axis='both', which='major', labelsize=18)
+
     plt.tight_layout()
     plt.savefig(output_filename, dpi=600)
     print(f"Chart saved: {output_filename}")
@@ -298,7 +331,7 @@ def plot_i_chart(
 
     # Annotations and Labels (Glass ID for each point)
     for index, row in subgroup_data.iterrows():
-        subgroup_label = row['Glass ID']
+        subgroup_label = row[data_cfg.substrate_col]
         
         ax.annotate(
             subgroup_label, 
@@ -306,13 +339,13 @@ def plot_i_chart(
             textcoords="offset points", 
             xytext=(5, 5), 
             ha='left', 
-            fontsize=12,
+            fontsize=18,
             rotation=45, 
             zorder=4 
         )
     
     # Draw vertical lines and date labels for chronological index
-    subgroup_data['Date_str'] = subgroup_data['Date'].dt.strftime('%m-%d-%Y')
+    subgroup_data['Date_str'] = subgroup_data[data_cfg.date_col].dt.strftime('%m-%d-%Y')
     # Use sort=False to maintain original chronological order
     date_boundaries = subgroup_data.groupby('Date_str', sort=False).apply(lambda g: g.index.min()).tolist()
 
@@ -326,22 +359,91 @@ def plot_i_chart(
             rotation=90,
             verticalalignment='top',
             horizontalalignment='center',
-            fontsize=12,
+            fontsize=18,
             color='black',
             zorder=0
         )
 
+    if chart_cfg.events_vlines:
+        # Convert the DataFrame's 'Date' column to the string format used for vlines
+        # Assuming subgroup_data['Date'] is a pandas datetime object
+        date_format = '%m/%d/%Y' # Adjust this format if your custom_vlines keys use a different date format
+        subgroup_data['events_vlines_date_str'] = subgroup_data[data_cfg.date_col].dt.strftime(date_format)
+
+        for date_str, label in chart_cfg.events_vlines.items():
+            # Find the *first* occurrence index in the chronological data for this date
+            # We assume date_str in custom_vlines matches the day of the change.
+            v_line_points = subgroup_data[subgroup_data['events_vlines_date_str'] == date_str].index.min()
+            
+            if pd.notna(v_line_points):
+                # 1. Draw the vertical line (e.g., in blue)
+                ax.axvline(x=v_line_points, 
+                           color='purple', # Use a distinct color like blue
+                           linestyle='--', 
+                           linewidth=2, 
+                           zorder=3) # Higher zorder to be clearly visible
+                
+                # 2. Add the custom label annotation at the top of the chart
+                ax.text(
+                    x=v_line_points,
+                    y=ax.get_ylim()[0], # Place at the top of the y-axis limit
+                    s=label, # The custom label text
+                    rotation=0,
+                    verticalalignment='bottom',
+                    horizontalalignment='left',
+                    fontsize=18, # Match existing text size
+                    color='purple', # Match the line color
+                    zorder=4, # Highest zorder for text visibility
+                )
+            else:
+                print(f"Warning: Could not find data for event vline date: {date_str}")
+
+    if chart_cfg.events_vlines:
+        # Convert the DataFrame's 'Date' column to the string format used for vlines
+        # Assuming subgroup_data['Date'] is a pandas datetime object
+        date_format = '%m/%d/%Y' # Adjust this format if your custom_vlines keys use a different date format
+        subgroup_data['events_vlines_date_str'] = subgroup_data[data_cfg.date_col].dt.strftime(date_format)
+
+        for date_str, label in chart_cfg.events_vlines.items():
+            # Find the *first* occurrence index in the chronological data for this date
+            # We assume date_str in custom_vlines matches the day of the change.
+            v_line_points = subgroup_data[subgroup_data['events_vlines_date_str'] == date_str].index.min()
+            
+            if pd.notna(v_line_points):
+                # 1. Draw the vertical line (e.g., in blue)
+                ax.axvline(x=v_line_points, 
+                           color='purple', # Use a distinct color like blue
+                           linestyle='--', 
+                           linewidth=2, 
+                           zorder=3) # Higher zorder to be clearly visible
+                
+                # 2. Add the custom label annotation at the top of the chart
+                ax.text(
+                    x=v_line_points,
+                    y=ax.get_ylim()[0], # Place at the top of the y-axis limit
+                    s=label, # The custom label text
+                    rotation=0,
+                    verticalalignment='bottom',
+                    horizontalalignment='left',
+                    fontsize=18, # Match existing text size
+                    color='purple', # Match the line color
+                    zorder=4, # Highest zorder for text visibility
+                )
+            else:
+                print(f"Warning: Could not find data for events vline date: {date_str}")
+
     cpk_str = f"N/A" if cpk is None else f"{cpk:.3f}"
     title = f"I Chart, Cpk: {cpk_str}" 
 
-    ax.set_title(title, fontsize=14)
-    ax.set_xlabel(chart_cfg.xlabel, fontsize=14)
-    ax.set_ylabel(f"{data_cfg.y_data_name}", fontsize=14)
+    ax.set_title(title, fontsize=20)
+    ax.set_xlabel(chart_cfg.xlabel, fontsize=18)
+    ax.set_ylabel(f"{data_cfg.y_data_name}", fontsize=18)
     #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=14)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=18)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-    
+    ax.tick_params(axis='both', which='major', labelsize=18)
+
     plt.tight_layout()
     plt.savefig(output_filename, dpi=600)
     print(f"Chart saved: {output_filename}")
@@ -415,7 +517,7 @@ def plot_r_chart(
             
     # Annotations and Labels (Glass ID for each point)
     for index, row in subgroup_data.iterrows():
-        subgroup_label = row['Glass ID']
+        subgroup_label = row[data_cfg.substrate_col]
         
         ax.annotate(
             subgroup_label, 
@@ -423,13 +525,13 @@ def plot_r_chart(
             textcoords="offset points", 
             xytext=(5, 5), 
             ha='left', 
-            fontsize=12,
+            fontsize=18,
             rotation=45, 
             zorder=4 
         )
     
     # Draw vertical lines and date labels for chronological index
-    subgroup_data['Date_str'] = subgroup_data['Date'].dt.strftime('%m-%d-%Y')
+    subgroup_data['Date_str'] = subgroup_data[data_cfg.date_col].dt.strftime('%m-%d-%Y')
     date_boundaries = subgroup_data.groupby('Date_str', sort=False).apply(lambda g: g.index.min()).tolist()
 
     for i, idx in enumerate(date_boundaries):
@@ -442,21 +544,54 @@ def plot_r_chart(
             rotation=90,
             verticalalignment='top',
             horizontalalignment='center',
-            fontsize=12,
+            fontsize=18,
             color='black',
             zorder=0
         )
+    if chart_cfg.events_vlines:
+        # Convert the DataFrame's 'Date' column to the string format used for vlines
+        # Assuming subgroup_data['Date'] is a pandas datetime object
+        date_format = '%m/%d/%Y' # Adjust this format if your custom_vlines keys use a different date format
+        subgroup_data['events_vlines_date_str'] = subgroup_data[data_cfg.date_col].dt.strftime(date_format)
+
+        for date_str, label in chart_cfg.events_vlines.items():
+            # Find the *first* occurrence index in the chronological data for this date
+            # We assume date_str in custom_vlines matches the day of the change.
+            v_line_points = subgroup_data[subgroup_data['events_vlines_date_str'] == date_str].index.min()
+            
+            if pd.notna(v_line_points):
+                # 1. Draw the vertical line (e.g., in blue)
+                ax.axvline(x=v_line_points, 
+                           color='purple', # Use a distinct color like blue
+                           linestyle='--', 
+                           linewidth=2, 
+                           zorder=3) # Higher zorder to be clearly visible
+                
+                # 2. Add the custom label annotation at the top of the chart
+                ax.text(
+                    x=v_line_points,
+                    y=ax.get_ylim()[0], # Place at the top of the y-axis limit
+                    s=label, # The custom label text
+                    rotation=0,
+                    verticalalignment='bottom',
+                    horizontalalignment='left',
+                    fontsize=18, # Match existing text size
+                    color='purple', # Match the line color
+                    zorder=4, # Highest zorder for text visibility
+                )
+            else:
+                print(f"Warning: Could not find data for event vline date: {date_str}")
 
     title = f"R Chart" 
 
-    ax.set_title(title, fontsize=14)
-    ax.set_xlabel(chart_cfg.xlabel, fontsize=14)
-    ax.set_ylabel(f"Range of {data_cfg.y_data_name}", fontsize=14)
+    ax.set_title(title, fontsize=20)
+    ax.set_xlabel(chart_cfg.xlabel, fontsize=18)
+    ax.set_ylabel(f"Range of {data_cfg.y_data_name}", fontsize=18)
     #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=14)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=18)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-
+    ax.tick_params(axis='both', which='major', labelsize=18)
     #fig.legend(fontsize=14, loc='outside upper right')
 
     plt.tight_layout()
@@ -532,7 +667,7 @@ def plot_s_chart(
             
     # Annotations and Labels (Glass ID for each point)
     for index, row in subgroup_data.iterrows():
-        subgroup_label = row['Glass ID']
+        subgroup_label = row[data_cfg.substrate_col]
         
         ax.annotate(
             subgroup_label, 
@@ -540,13 +675,13 @@ def plot_s_chart(
             textcoords="offset points", 
             xytext=(5, 5), 
             ha='left', 
-            fontsize=12,
+            fontsize=18,
             rotation=45, 
             zorder=4 
         )
     
     # Draw vertical lines and date labels for chronological index
-    subgroup_data['Date_str'] = subgroup_data['Date'].dt.strftime('%m-%d-%Y')
+    subgroup_data['Date_str'] = subgroup_data[data_cfg.date_col].dt.strftime('%m-%d-%Y')
     date_boundaries = subgroup_data.groupby('Date_str', sort=False).apply(lambda g: g.index.min()).tolist()
 
     for i, idx in enumerate(date_boundaries):
@@ -559,20 +694,55 @@ def plot_s_chart(
             rotation=90,
             verticalalignment='top',
             horizontalalignment='center',
-            fontsize=12,
+            fontsize=18,
             color='black',
             zorder=0
         )
 
+    if chart_cfg.events_vlines:
+        # Convert the DataFrame's 'Date' column to the string format used for vlines
+        # Assuming subgroup_data['Date'] is a pandas datetime object
+        date_format = '%m/%d/%Y' # Adjust this format if your custom_vlines keys use a different date format
+        subgroup_data['events_vlines_date_str'] = subgroup_data[data_cfg.date_col].dt.strftime(date_format)
+
+        for date_str, label in chart_cfg.events_vlines.items():
+            # Find the *first* occurrence index in the chronological data for this date
+            # We assume date_str in custom_vlines matches the day of the change.
+            v_line_points = subgroup_data[subgroup_data['events_vlines_date_str'] == date_str].index.min()
+            
+            if pd.notna(v_line_points):
+                # 1. Draw the vertical line (e.g., in blue)
+                ax.axvline(x=v_line_points, 
+                           color='purple', # Use a distinct color like blue
+                           linestyle='--', 
+                           linewidth=2, 
+                           zorder=3) # Higher zorder to be clearly visible
+                
+                # 2. Add the custom label annotation at the top of the chart
+                ax.text(
+                    x=v_line_points,
+                    y=ax.get_ylim()[0], # Place at the top of the y-axis limit
+                    s=label, # The custom label text
+                    rotation=0,
+                    verticalalignment='bottom',
+                    horizontalalignment='left',
+                    fontsize=18, # Match existing text size
+                    color='purple', # Match the line color
+                    zorder=4, # Highest zorder for text visibility
+                )
+            else:
+                print(f"Warning: Could not find data for event vline date: {date_str}")
+
     title = f"S Chart" 
 
-    ax.set_title(title, fontsize=14)
-    ax.set_xlabel(chart_cfg.xlabel, fontsize=14)
-    ax.set_ylabel(f"Standard Deviation of {data_cfg.y_data_name}", fontsize=14) # Changed ylabel
+    ax.set_title(title, fontsize=20)
+    ax.set_xlabel(chart_cfg.xlabel, fontsize=18)
+    ax.set_ylabel(f"Standard Deviation of {data_cfg.y_data_name}", fontsize=18) # Changed ylabel
     #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=14)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=18)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    ax.tick_params(axis='both', which='major', labelsize=18)
 
     plt.tight_layout()
     plt.savefig(output_filename, dpi=600)
@@ -646,7 +816,7 @@ def plot_mr_chart(
         )
             
     for index, row in subgroup_data.iterrows():
-        subgroup_label = row['Glass ID']
+        subgroup_label = row[data_cfg.substrate_col]
         
         ax.annotate(
             subgroup_label, 
@@ -654,13 +824,13 @@ def plot_mr_chart(
             textcoords="offset points", 
             xytext=(5, 5), 
             ha='left', 
-            fontsize=12,
+            fontsize=18,
             rotation=45, 
             zorder=4 
         )
     
     # Draw vertical lines and date labels for chronological index
-    subgroup_data['Date_str'] = subgroup_data['Date'].dt.strftime('%m-%d-%Y')
+    subgroup_data['Date_str'] = subgroup_data[data_cfg.date_col].dt.strftime('%m-%d-%Y')
     date_boundaries = subgroup_data.groupby('Date_str', sort=False).apply(lambda g: g.index.min()).tolist()
 
     for i, idx in enumerate(date_boundaries):
@@ -673,20 +843,54 @@ def plot_mr_chart(
             rotation=90,
             verticalalignment='top',
             horizontalalignment='center',
-            fontsize=12,
+            fontsize=18,
             color='black',
             zorder=0
         )
+    if chart_cfg.events_vlines:
+            # Convert the DataFrame's 'Date' column to the string format used for vlines
+            # Assuming subgroup_data['Date'] is a pandas datetime object
+            date_format = '%m/%d/%Y' # Adjust this format if your custom_vlines keys use a different date format
+            subgroup_data['events_vlines_date_str'] = subgroup_data[data_cfg.date_col].dt.strftime(date_format)
+
+            for date_str, label in chart_cfg.events_vlines.items():
+                # Find the *first* occurrence index in the chronological data for this date
+                # We assume date_str in custom_vlines matches the day of the change.
+                v_line_points = subgroup_data[subgroup_data['events_vlines_date_str'] == date_str].index.min()
+                
+                if pd.notna(v_line_points):
+                    # 1. Draw the vertical line (e.g., in blue)
+                    ax.axvline(x=v_line_points, 
+                            color='purple', # Use a distinct color like blue
+                            linestyle='--', 
+                            linewidth=2, 
+                            zorder=3) # Higher zorder to be clearly visible
+                    
+                    # 2. Add the custom label annotation at the top of the chart
+                    ax.text(
+                        x=v_line_points,
+                        y=ax.get_ylim()[0], # Place at the top of the y-axis limit
+                        s=label, # The custom label text
+                        rotation=0,
+                        verticalalignment='bottom',
+                        horizontalalignment='left',
+                        fontsize=18, # Match existing text size
+                        color='purple', # Match the line color
+                        zorder=4, # Highest zorder for text visibility
+                    )
+                else:
+                    print(f"Warning: Could not find data for event vline date: {date_str}")
 
     title = f"MR Chart" 
 
-    ax.set_title(title, fontsize=14)
-    ax.set_xlabel(chart_cfg.xlabel, fontsize=14)
-    ax.set_ylabel(f"Moving Range of {data_cfg.y_data_name}", fontsize=14) 
+    ax.set_title(title, fontsize=20)
+    ax.set_xlabel(chart_cfg.xlabel, fontsize=18)
+    ax.set_ylabel(f"Moving Range of {data_cfg.y_data_name}", fontsize=18) 
     #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=14)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=18)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    ax.tick_params(axis='both', which='major', labelsize=18)
 
     plt.tight_layout()
     plt.savefig(output_filename, dpi=600)
