@@ -32,7 +32,7 @@ from typing import Optional
 
 
 from spc import DataConfig, ChartConfig 
-
+fs = 24
 def plot_xbar_chart(
     df_subgroups: pd.DataFrame, 
     data_cfg: DataConfig, 
@@ -147,7 +147,7 @@ def plot_xbar_chart(
             textcoords="offset points", 
             xytext=(5, 5), 
             ha='left', 
-            fontsize=18,
+            fontsize=fs,
             rotation=45, 
             zorder=4 
         )
@@ -167,7 +167,7 @@ def plot_xbar_chart(
             rotation=90,
             verticalalignment='top',
             horizontalalignment='center',
-            fontsize=18,
+            fontsize=fs,
             color='black',
             zorder=0
         )
@@ -198,7 +198,7 @@ def plot_xbar_chart(
                     rotation=0,
                     verticalalignment='bottom',
                     horizontalalignment='left',
-                    fontsize=18, # Match existing text size
+                    fontsize=fs, # Match existing text size
                     color='purple', # Match the line color
                     zorder=4, # Highest zorder for text visibility
                 )
@@ -208,11 +208,11 @@ def plot_xbar_chart(
     cpk_str = f"N/A" if cpk is None else f"{cpk:.3f}"
     title = f"X-bar Chart, Cpk: {cpk_str}" 
 
-    ax.set_title(title, fontsize=20)
-    ax.set_xlabel(chart_cfg.xlabel, fontsize=18)
-    ax.set_ylabel(f"{data_cfg.y_data_name}", fontsize=18)
+    ax.set_title(title, fontsize=fs)
+    ax.set_xlabel(chart_cfg.xlabel, fontsize=fs)
+    ax.set_ylabel(f"{data_cfg.y_data_name}", fontsize=fs)
     #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=18)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=fs)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
     ax.tick_params(axis='both', which='major', labelsize=18)
@@ -339,7 +339,7 @@ def plot_i_chart(
             textcoords="offset points", 
             xytext=(5, 5), 
             ha='left', 
-            fontsize=18,
+            fontsize=fs,
             rotation=45, 
             zorder=4 
         )
@@ -359,7 +359,7 @@ def plot_i_chart(
             rotation=90,
             verticalalignment='top',
             horizontalalignment='center',
-            fontsize=18,
+            fontsize=fs,
             color='black',
             zorder=0
         )
@@ -391,7 +391,7 @@ def plot_i_chart(
                     rotation=0,
                     verticalalignment='bottom',
                     horizontalalignment='left',
-                    fontsize=18, # Match existing text size
+                    fontsize=fs, # Match existing text size
                     color='purple', # Match the line color
                     zorder=4, # Highest zorder for text visibility
                 )
@@ -425,7 +425,7 @@ def plot_i_chart(
                     rotation=0,
                     verticalalignment='bottom',
                     horizontalalignment='left',
-                    fontsize=18, # Match existing text size
+                    fontsize=fs, # Match existing text size
                     color='purple', # Match the line color
                     zorder=4, # Highest zorder for text visibility
                 )
@@ -435,14 +435,14 @@ def plot_i_chart(
     cpk_str = f"N/A" if cpk is None else f"{cpk:.3f}"
     title = f"I Chart, Cpk: {cpk_str}" 
 
-    ax.set_title(title, fontsize=20)
-    ax.set_xlabel(chart_cfg.xlabel, fontsize=18)
-    ax.set_ylabel(f"{data_cfg.y_data_name}", fontsize=18)
+    ax.set_title(title, fontsize=fs)
+    ax.set_xlabel(chart_cfg.xlabel, fontsize=fs)
+    ax.set_ylabel(f"{data_cfg.y_data_name}", fontsize=fs)
     #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=18)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=fs)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-    ax.tick_params(axis='both', which='major', labelsize=18)
+    ax.tick_params(axis='both', which='major', labelsize=fs)
 
     plt.tight_layout()
     plt.savefig(output_filename, dpi=600)
@@ -525,7 +525,7 @@ def plot_r_chart(
             textcoords="offset points", 
             xytext=(5, 5), 
             ha='left', 
-            fontsize=18,
+            fontsize=fs,
             rotation=45, 
             zorder=4 
         )
@@ -544,7 +544,7 @@ def plot_r_chart(
             rotation=90,
             verticalalignment='top',
             horizontalalignment='center',
-            fontsize=18,
+            fontsize=fs,
             color='black',
             zorder=0
         )
@@ -575,7 +575,7 @@ def plot_r_chart(
                     rotation=0,
                     verticalalignment='bottom',
                     horizontalalignment='left',
-                    fontsize=18, # Match existing text size
+                    fontsize=fs, # Match existing text size
                     color='purple', # Match the line color
                     zorder=4, # Highest zorder for text visibility
                 )
@@ -584,11 +584,11 @@ def plot_r_chart(
 
     title = f"R Chart" 
 
-    ax.set_title(title, fontsize=20)
-    ax.set_xlabel(chart_cfg.xlabel, fontsize=18)
-    ax.set_ylabel(f"Range of {data_cfg.y_data_name}", fontsize=18)
+    ax.set_title(title, fontsize=fs)
+    ax.set_xlabel(chart_cfg.xlabel, fontsize=fs)
+    ax.set_ylabel(f"Range of {data_cfg.y_data_name}", fontsize=fs)
     #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=18)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=fs)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
     ax.tick_params(axis='both', which='major', labelsize=18)
@@ -694,7 +694,7 @@ def plot_s_chart(
             rotation=90,
             verticalalignment='top',
             horizontalalignment='center',
-            fontsize=18,
+            fontsize=fs,
             color='black',
             zorder=0
         )
@@ -726,7 +726,7 @@ def plot_s_chart(
                     rotation=0,
                     verticalalignment='bottom',
                     horizontalalignment='left',
-                    fontsize=18, # Match existing text size
+                    fontsize=fs, # Match existing text size
                     color='purple', # Match the line color
                     zorder=4, # Highest zorder for text visibility
                 )
@@ -735,14 +735,14 @@ def plot_s_chart(
 
     title = f"S Chart" 
 
-    ax.set_title(title, fontsize=20)
-    ax.set_xlabel(chart_cfg.xlabel, fontsize=18)
-    ax.set_ylabel(f"Standard Deviation of {data_cfg.y_data_name}", fontsize=18) # Changed ylabel
+    ax.set_title(title, fontsize=fs)
+    ax.set_xlabel(chart_cfg.xlabel, fontsize=fs)
+    ax.set_ylabel(f"Standard Deviation of {data_cfg.y_data_name}", fontsize=fs) # Changed ylabel
     #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=18)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=fs)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-    ax.tick_params(axis='both', which='major', labelsize=18)
+    ax.tick_params(axis='both', which='major', labelsize=fs)
 
     plt.tight_layout()
     plt.savefig(output_filename, dpi=600)
@@ -824,7 +824,7 @@ def plot_mr_chart(
             textcoords="offset points", 
             xytext=(5, 5), 
             ha='left', 
-            fontsize=18,
+            fontsize=fs,
             rotation=45, 
             zorder=4 
         )
@@ -843,7 +843,7 @@ def plot_mr_chart(
             rotation=90,
             verticalalignment='top',
             horizontalalignment='center',
-            fontsize=18,
+            fontsize=fs,
             color='black',
             zorder=0
         )
@@ -874,7 +874,7 @@ def plot_mr_chart(
                         rotation=0,
                         verticalalignment='bottom',
                         horizontalalignment='left',
-                        fontsize=18, # Match existing text size
+                        fontsize=fs, # Match existing text size
                         color='purple', # Match the line color
                         zorder=4, # Highest zorder for text visibility
                     )
@@ -883,11 +883,11 @@ def plot_mr_chart(
 
     title = f"MR Chart" 
 
-    ax.set_title(title, fontsize=20)
-    ax.set_xlabel(chart_cfg.xlabel, fontsize=18)
-    ax.set_ylabel(f"Moving Range of {data_cfg.y_data_name}", fontsize=18) 
+    ax.set_title(title, fontsize=fs)
+    ax.set_xlabel(chart_cfg.xlabel, fontsize=fs)
+    ax.set_ylabel(f"Moving Range of {data_cfg.y_data_name}", fontsize=fs) 
     #ax.legend(loc=chart_cfg.legend_location, fontsize=14)
-    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=18)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0),fontsize=fs)
     ax.set_xlim(x_positions.min() - 0.5, x_positions.max() + 0.5)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
     ax.tick_params(axis='both', which='major', labelsize=18)
