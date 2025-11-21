@@ -136,15 +136,17 @@ def nelson_7(df: pd.DataFrame, column: str, cl: float, ucl: float, lcl: float, n
     one_sigma_l = cl - sigma
 
     in_zone_c = (df_copy[column] <= one_sigma_u) & (df_copy[column] >= one_sigma_l)
-    mask = in_zone_c.rolling(window=15, min_periods=15).apply(lambda x: x.all(), raw=True).astype(bool).fillna(False)
+    mask_raw = in_zone_c.rolling(window=15, min_periods=15).apply(lambda x: x.all(), raw=True)
 
-    df_copy.loc[mask, new_column] = True
+    final_mask = np.where(mask_raw.isna(), False, mask_raw).astype(bool)
+
+    df_copy.loc[final_mask, new_column] = True
 
     return df_copy
 
 def nelson_8(df: pd.DataFrame, column: str, cl: float, ucl: float, lcl: float, new_column='Rule 8') -> pd.DataFrame:
     """
-    Rule 8: Eight points in a row exist but none within one standard deviation of the mean 
+    Rule 8: Eight points in a row exist but none within one standard deviation of the mean
     and the points are in both directions of the mean (in Zone A or B only). This indicates a mixture.
     """
     df_copy = df.copy()
@@ -158,16 +160,20 @@ def nelson_8(df: pd.DataFrame, column: str, cl: float, ucl: float, lcl: float, n
     below = (df_copy[column] < one_sigma_l)
     outside_zone_c = above | below
 
-    
-    all_outside = outside_zone_c.rolling(window=8, min_periods=8).apply(lambda x: x.all(), raw=True).astype(bool).fillna(False)
-    
-    any_above = above.rolling(window=8, min_periods=8).max().astype(bool).fillna(False)
-    
-    any_below = below.rolling(window=8, min_periods=8).max().astype(bool).fillna(False)
-    
-    mask = all_outside & any_above & any_below
-    
+
+    all_outside = outside_zone_c.rolling(window=8, min_periods=8).apply(lambda x: x.all(), raw=True)
+    all_outside_mask = np.where(all_outside.isna(), False, all_outside).astype(bool)
+
+    any_above = above.rolling(window=8, min_periods=8).max()
+    any_above_mask = np.where(any_above.isna(), False, any_above).astype(bool)
+
+    any_below = below.rolling(window=8, min_periods=8).max()
+    any_below_mask = np.where(any_below.isna(), False, any_below).astype(bool)
+
+    mask = all_outside_mask & any_above_mask & any_below_mask
+    mask_series = pd.Series(mask, index=df_copy.index)
+
     for k in range(8):
-        df_copy.loc[mask.shift(k).fillna(False), new_column] = True
+        df_copy.loc[mask_series.shift(k).fillna(False), new_column] = True
 
     return df_copy
